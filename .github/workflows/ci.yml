@@ -5,7 +5,8 @@ on:
   pull_requests: branches:["main"]
 
 jobs:
-  build: runs-on:ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
   steps:
     - name: Checkout Node
       uses: actions/checkout@v4
@@ -17,3 +18,4 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
+    
