@@ -1,11 +1,12 @@
 const express = require("express");
 
 const app = express();
+const PORT = process.env.PORT || 8000;
 
 app.get("/health", (req, res) => {
   res.status(200).message({ status: "ok" });
 });
 
-app.listen(8000, () => {
-  console.log("app running on the port 8000");
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
