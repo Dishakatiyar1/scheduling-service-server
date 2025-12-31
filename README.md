@@ -133,9 +133,3 @@ Next Steps
 - Add overlap checks for availability ranges
 - Implement booking creation with transaction-based double booking prevention
 
----
-
-Note
-
-This project is being built incrementally on purpose.  
-Some features are intentionally missing until the foundation is solid.
