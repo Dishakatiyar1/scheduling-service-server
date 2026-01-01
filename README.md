@@ -72,6 +72,8 @@ This project prioritizes correctness, time handling, and concurrency safety over
   "endTime": "2025-01-01T13:00:00Z",
   "slotDuration": 30
 }
+```
+
 **Validations**
 - Required fields present  
 - Valid ISO timestamps  
