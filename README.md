@@ -1,135 +1,135 @@
-# Event Booking & Availability System (Backend)
+Event Booking & Availability System (Backend)
 
-This project is a backend-focused scheduling system built from scratch to understand how real booking systems work internally.
+A backend-focused scheduling system built from scratch to understand how real booking systems work internally.
 
-The goal of this project is not UI or fast demos. It is to learn how backend systems handle time, enforce business rules, and avoid common problems like invalid data and double booking.
+This project prioritizes correctness, time handling, and concurrency safety over UI or quick demos.
 
----
+What the System Does
 
-What This System Does
+Hosts define availability as time ranges
 
-- Hosts define when they are available using time ranges
-- Availability is stored as ranges, not pre-created slots
-- Users will later be able to book time within those ranges
-- The backend is responsible for correctness, not the database alone
+Availability is stored as intent, not pre-created slots
 
-All time is handled and stored in UTC.
+Users book time within those ranges
 
----
+Backend enforces all business rules
+
+All time is stored and handled in UTC
 
 Tech Stack
 
-- Node.js
-- Express.js
-- PostgreSQL
-- Prisma ORM
+Node.js
 
----
+Express.js
+
+PostgreSQL
+
+Prisma ORM
 
 Core Design Principles
 
-- Store intent, not derived data  
-  Availability is stored as time ranges. Slots are derived later.
+Store intent, not derived data
+Availability is stored as ranges. Slots are derived when needed.
 
-- Validate early  
-  Invalid time data is rejected before it reaches the database.
+Validate early
+Invalid time data is rejected before reaching the database.
 
-- Backend-first correctness  
-  Business rules are enforced in application logic and transactions.
+Backend-first correctness
+Business rules are enforced in application logic and transactions.
 
-- Step-by-step development  
-  Features are added gradually to avoid hidden bugs.
+Incremental development
+Features are added step by step to avoid hidden bugs.
 
----
-
-Database Overview
-
+Database Models (High Level)
 User
 
-- Represents both hosts and users
-- Differentiated using a role enum (HOST, USER)
-- Email is unique
+Represents both hosts and users
+
+Differentiated using a role enum (HOST, USER)
+
+Email is unique
 
 Availability
 
-- Represents a host’s available time window
-- Stores start time, end time, and slot duration in minutes
+Host’s available time window
+
+Stores start time, end time, and slot duration
 
 Booking
 
-- Represents a confirmed booking
-- Stores exact booked time range
-- Designed to later prevent double booking using transactions
+Represents a confirmed booking
 
----
+Stores exact booked time range
 
-API Endpoints
+Designed for transaction-based double booking prevention
 
-Create Availability (In Progress)
+API (Current)
+Create Availability
+
 POST /availability
 
-Request Body:
+Request body:
+
 {
-"hostId": "uuid",
-"startTime": "2025-01-01T10:00:00Z",
-"endTime": "2025-01-01T13:00:00Z",
-"slotDuration": 30
+  "hostId": "uuid",
+  "startTime": "2025-01-01T10:00:00Z",
+  "endTime": "2025-01-01T13:00:00Z",
+  "slotDuration": 30
 }
 
-Validations Implemented
 
-- All required fields must be present
-- startTime and endTime must be valid ISO timestamps
-- endTime must be strictly after startTime
-- slotDuration must be greater than zero
+Validations
 
-These validations ensure invalid time data never enters the system.
+Required fields present
 
----
+Valid ISO timestamps
 
-What Is Not Implemented Yet
+endTime must be greater than startTime
 
-- Authentication
-- Role-based authorization
-- Saving availability to the database
-- Booking creation
-- Double booking prevention
-- Transaction handling
-- Concurrency safety
+slotDuration must be greater than 0
 
-These will be added step by step.
+What’s Not Implemented Yet
 
----
+Authentication
 
-Why This Project Exists
+Booking creation
+
+Double booking prevention
+
+Transaction handling
+
+Concurrency safety
+
+Why This Project
 
 This project focuses on real backend problems:
 
-- Time range validation
-- Availability modeling
-- Safe database writes
-- Preventing race conditions
-- Designing systems that behave correctly under load
+Time range modeling
 
-The goal is understanding why things break and how to prevent that.
+Safe database writes
 
----
+Preventing race conditions
+
+Designing systems that behave correctly under concurrency
+
+The goal is to understand why systems break and how to prevent that.
 
 Current Status
 
-Active development
+Database schema finalized
 
-- Database schema finalized
-- Prisma and PostgreSQL configured
-- Availability API validation implemented
-- Authorization and persistence coming next
+PostgreSQL and Prisma configured
 
----
+Availability API implemented
+
+Booking and transaction logic in progress
 
 Next Steps
 
-- Validate that only HOST users can create availability
-- Store availability in the database
-- Add overlap checks for availability ranges
-- Implement booking creation with transaction-based double booking prevention
+Implement booking creation
 
+Prevent overlapping bookings using transactions
+
+Handle concurrency safely
+
+Add authentication and authorization
