@@ -52,31 +52,64 @@ availabilityRouter.post("/", async (req, res) => {
         .json({ error: "Only hosts can create availability" });
     }
 
-    const overlappingAvailability = await prisma.availability.findFirst({
-      where: {
-        hostId,
-        AND: [{ startTime: { lt: end } }, { endTime: { gt: start } }],
-      },
-    });
-
-    if (overlappingAvailability) {
-      return res.status(409).json({
-        error: "Availability overlaps with existing availability",
+    const mergedAvailability = await prisma.$transaction(async (tx) => {
+      // 1. find all overlapping availabilities
+      const overlapping = await tx.availability.findMany({
+        where: {
+          hostId,
+          AND: [{ startTime: { lte: end } }, { endTime: { gte: start } }],
+        },
       });
-    }
 
-    const availability = await prisma.availability.create({
-      data: {
-        hostId,
-        startTime: start,
-        endTime: end,
-        slotDuration,
-      },
+      // 2. calculate merged intervals
+      let mergedStart = start;
+      let mergedEnd = end;
+
+      for (const avail of overlapping) {
+        if (avail.slotDuration !== slotDuration) {
+          throw new Error("slotDuration mismatch with existing availability");
+        }
+        if (avail.startTime < mergedStart) {
+          mergedStart = avail.startTime;
+        }
+        if (avail.endTime > mergedEnd) {
+          mergedEnd = avail.endTime;
+        }
+      }
+
+      // 3. delete overlapping rows (if any)
+      if (overlapping.length > 0) {
+        await tx.availability.deleteMany({
+          where: {
+            id: { in: overlapping.map((a) => a.id) },
+          },
+        });
+      }
+
+      // 4. create merged availability
+      return tx.availability.create({
+        data: {
+          hostId,
+          startTime: mergedStart,
+          endTime: mergedEnd,
+          slotDuration,
+        },
+      });
     });
 
-    return res
-      .status(201)
-      .json({ message: "Availability created", availability });
+    // const availability = await prisma.availability.create({
+    //   data: {
+    //     hostId,
+    //     startTime: start,
+    //     endTime: end,
+    //     slotDuration,
+    //   },
+    // });
+
+    return res.status(201).json({
+      message: "Availability merged successfully",
+      availability: mergedAvailability,
+    });
   } catch (error) {
     console.error("create availability error:", error);
     return res.status(500).json({ error: "Internal server error" });

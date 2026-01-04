@@ -8,20 +8,20 @@ This project prioritizes correctness, time handling, and concurrency safety over
 
 ## What the System Does
 
-- Hosts define availability as time ranges  
-- Availability is stored as intent, not pre-created slots  
-- Users book time within those ranges  
-- Backend enforces all business rules  
-- All time is stored and handled in UTC  
+- Hosts define availability as time ranges
+- Availability is stored as intent, not pre-created slots
+- Users book time within those ranges
+- Backend enforces all business rules
+- All time is stored and handled in UTC
 
 ---
 
 ## Tech Stack
 
-- Node.js  
-- Express.js  
-- PostgreSQL  
-- Prisma ORM  
+- Node.js
+- Express.js
+- PostgreSQL
+- Prisma ORM
 
 ---
 
@@ -44,27 +44,44 @@ This project prioritizes correctness, time handling, and concurrency safety over
 ## Database Models (High Level)
 
 ### User
-- Represents both hosts and users  
-- Differentiated using a role enum (`HOST`, `USER`)  
-- Email is unique  
+
+- Represents both hosts and users
+- Differentiated using a role enum (`HOST`, `USER`)
+- Email is unique
 
 ### Availability
-- Host’s available time window  
-- Stores start time, end time, and slot duration  
+
+Represents a host’s available time window.
+
+**Invariant**
+
+> For each host, availability rows are always merged, non-overlapping intervals with a consistent slot duration.
+
+- Stores start time, end time, and slot duration
+- Overlapping or touching intervals are merged atomically
+- Database never contains overlapping availability for a host
 
 ### Booking
-- Represents a confirmed booking  
-- Stores exact booked time range  
-- Designed for transaction-based double booking prevention  
+
+Represents a confirmed booking.
+
+- Stores exact booked time range
+- Designed to be created using transactions
+- Prevents double booking under concurrency
 
 ---
 
-## API (Current)
+## API (Implemented)
 
-### Create Availability  
+### Create / Merge Availability
+
 `POST /availability`
 
+Creates availability for a host.  
+If the new time range overlaps or touches existing availability, intervals are **merged atomically**.
+
 **Request body:**
+
 ```json
 {
   "hostId": "uuid",
@@ -75,45 +92,63 @@ This project prioritizes correctness, time handling, and concurrency safety over
 ```
 
 **Validations**
-- Required fields present  
-- Valid ISO timestamps  
-- `endTime` must be greater than `startTime`  
-- `slotDuration` must be greater than 0  
+
+- Required fields must be present
+- startTime and endTime must be Valid ISO UTC timestamps
+- `endTime` must be greater than `startTime`
+- `slotDuration` must be greater than 0
+- hostId must belong to a user with role HOST
+- slot duration must match existing availability for the host
+
+**Behavior**
+
+- Find all overlapping or touching availability intervals
+- Merge them into a single normalized interval
+- Deletes old rows and inserts the merged interval
+- All operations are executed inside a database transaction
 
 ---
 
 ## What’s Not Implemented Yet
-- Authentication  
-- Booking creation  
-- Double booking prevention  
-- Transaction handling  
-- Concurrency safety  
+
+- Authentication and Authorization
+- Slot persistence (slots will be derived dynamically)
+- Booking creation API
+- Double booking prevention logic
+- Transaction isolation tuning
+- Pagination and rate limiting
+- indexing for faster query
 
 ---
 
-## Why This Project
+### Why This Project Exists
 
-This project focuses on real backend problems:
+Most booking systems fail due to:
 
-- Time range modeling  
-- Safe database writes  
-- Preventing race conditions  
-- Designing systems that behave correctly under concurrency  
+- Incorrect time range modeling
+- Storing derived data like slots
+- Missing transactional guarantees
+- Assuming "single user" means "no concurrency"
 
-The goal is to understand why systems break and how to prevent that.
-
----
+This project is built to experience and solve those failures, not hide them.
 
 ## Current Status
-- Database schema finalized  
-- PostgreSQL and Prisma configured  
-- Availability API implemented  
-- Booking and transaction logic in progress  
+
+- PostgreSQL and Prisma configured (local developement)
+- Database schema finalized
+- Availability API implemented with:
+  - strict input validation
+  - host role checks
+  - interval merging logic
+  - transaction safety
+- Availabilty data invariant at the write-time
 
 ---
 
 ## Next Steps
-- Implement booking creation  
-- Prevent overlapping bookings using transactions  
-- Handle concurrency safely  
-- Add authentication and authorization  
+
+- Generate available slots dynamically from availability
+- Implement booking creation using transactions
+- Prevent double booking under concurrent requests
+- Add authentication and role based authorization
+- Prepare production safe migration and deployment flow
