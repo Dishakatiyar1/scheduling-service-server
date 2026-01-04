@@ -52,6 +52,19 @@ availabilityRouter.post("/", async (req, res) => {
         .json({ error: "Only hosts can create availability" });
     }
 
+    const overlappingAvailability = await prisma.availability.findFirst({
+      where: {
+        hostId,
+        AND: [{ startTime: { lt: end } }, { endTime: { gt: start } }],
+      },
+    });
+
+    if (overlappingAvailability) {
+      return res.status(409).json({
+        error: "Availability overlaps with existing availability",
+      });
+    }
+
     const availability = await prisma.availability.create({
       data: {
         hostId,
