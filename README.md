@@ -107,6 +107,30 @@ If the new time range overlaps or touches existing availability, intervals are *
 - Deletes old rows and inserts the merged interval
 - All operations are executed inside a database transaction
 
+### Fetch Availability of a host
+
+`GET /availability/:hostId/slots?date=2025-01-01`
+
+Fetches availability for a host.
+
+**Request body:**
+
+```json
+{}
+```
+
+**Validations**
+
+- Required fields must be present
+
+**Behavior**
+
+- Converts query Date to UTC start of the day & UTC end of the day
+- Fetch all availabilities for the host that overlap this day
+- 
+
+---
+
 ---
 
 ## What’s Not Implemented Yet

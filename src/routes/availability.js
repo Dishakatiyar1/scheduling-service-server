@@ -1,5 +1,6 @@
 const express = require("express");
 const { prisma } = require("../prisma");
+const { generateSlots } = require("../utils/generateSlots");
 
 const availabilityRouter = express.Router();
 
@@ -112,6 +113,59 @@ availabilityRouter.post("/", async (req, res) => {
     });
   } catch (error) {
     console.error("create availability error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+availabilityRouter.get("/:hostId/slots", async (req, res) => {
+  try {
+    const { hostId } = req.params;
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ error: "date query param is required" });
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({
+        error: "date must be in YYYY-MM-DD format",
+      });
+    }
+
+    const dayStart = new Date(date + "T00:00:00.000Z");
+    // const dayEnd = new Date(date + "T23:59:59.999Z"); this is wrong, make the day end exclusive
+    const dayEnd = new Date(date + "T00:00:00.000Z"); // start of next day ->
+    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1); // move the day forward by one day
+
+    const availabilities = await prisma.availability.findMany({
+      where: {
+        hostId,
+        AND: [{ startTime: { lte: dayEnd } }, { endTime: { gte: dayStart } }],
+      },
+      orderBy: { startTime: "asc" },
+    });
+
+    const slots = [];
+
+    for (const availability of availabilities) {
+      const effectiveStart =
+        availability.startTime < dayStart ? dayStart : availability.startTime; // max of start time
+
+      const effectiveEnd =
+        availability.endTime > dayEnd ? dayEnd : availability.endTime; // min of end time
+
+      const generated = generateSlots(
+        effectiveStart,
+        effectiveEnd,
+        availability.slotDuration
+      );
+
+      slots.push(...generated);
+    }
+
+    return res.status(200).json({ slots });
+  } catch (error) {
+    console.error("get slots error:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
