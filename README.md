@@ -125,9 +125,10 @@ Fetches availability for a host.
 
 **Behavior**
 
-- Converts query Date to UTC start of the day & UTC end of the day
+- Converts query Date to UTC start of the day & UTC end of the day (start of next day - make it exclusive)
 - Fetch all availabilities for the host that overlap this day
-- 
+- Generate slots from all and push into array
+- returns an array of slots with start and end time of the same day
 
 ---
 
