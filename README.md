@@ -113,12 +113,6 @@ If the new time range overlaps or touches existing availability, intervals are *
 
 Fetches availability for a host.
 
-**Request body:**
-
-```json
-{}
-```
-
 **Validations**
 
 - Required fields must be present
@@ -130,6 +124,39 @@ Fetches availability for a host.
 - Generate slots from all and push into array
 - returns an array of slots with start and end time of the same day
 
+### Create Booking
+
+`POST /booking`
+
+books a slot for a user to host.  
+If booking already exists or slots is not valid in availablity, then booking is created **atomically**.
+
+**Request body:**
+
+```json
+{
+  "hostId": "uuid",
+  "userId": "uuid",
+  "startTime": "2025-01-01T10:00:00Z",
+  "endTime": "2025-01-01T13:00:00Z"
+}
+```
+
+**Validations**
+
+- Required fields must be present
+- startTime and endTime must be Valid ISO UTC timestamps
+- `endTime` must be greater than `startTime`
+- `slotDuration` must be same as existing one.
+- userId and hostId should be valid.
+
+**Behavior**
+
+- Check for existing booking (if any throw error)
+- Check for overlapping availablity (if any throw error)
+- Create booking
+- All operations are executed inside a database transaction
+
 ---
 
 ---
@@ -137,10 +164,6 @@ Fetches availability for a host.
 ## What’s Not Implemented Yet
 
 - Authentication and Authorization
-- Slot persistence (slots will be derived dynamically)
-- Booking creation API
-- Double booking prevention logic
-- Transaction isolation tuning
 - Pagination and rate limiting
 - indexing for faster query
 
